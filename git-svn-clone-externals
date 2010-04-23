@@ -61,11 +61,22 @@ function do_link()
 	target_link="$2"
 	base="$(dirname $target_link)"
 	(
-		mkdir -p "$base"
+		if [ ! -d "$base" -a ! -h "$base" ]; then
+			mkdir -p "$base"
+		fi
 		cd $base
-		rel=$(git rev-parse --show-cdup)
-		echo "Linking ${rel}.git_externals/$src_dir ==> $target_link"
-		ln -sfh ${rel}.git_externals/"$src_dir" "${rel}$target_link"
+		from="${git_root}/.git_externals/${src_dir}"
+		to="${git_root}/${target_link}"
+		
+		if [ "$git_root" == `pwd -P` ]; then
+			clean_from=$(echo "${from}" | sed "s,${git_root},.,")
+			clean_to=$(echo "${to}" | sed "s,${git_root},.,")
+		else
+			clean_from=$(echo "${from}" | sed "s,${git_root},..,")
+			clean_to=$(echo "${to}" | sed "s,${git_root},..,")
+		fi
+		echo "Linking ${clean_from} ==> ${clean_to}"
+		ln -sfh "${clean_from}" "${clean_to}"
 	)
 }
 
@@ -84,6 +95,12 @@ function do_excludes()
 	fi
 }
 
+git_rev_parse=$(git rev-parse --show-cdup)
+if [ "$git_rev_parse" != "" ]; then
+	cd $git_rev_parse
+fi
+
+git_root=`pwd -P`
 
 git svn show-externals|grep -vE '#|^$'|while read -a words
 do
