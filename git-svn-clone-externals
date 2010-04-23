@@ -16,6 +16,8 @@ function call()
 
 function do_clone()
 {
+	echo "Cloning from: $remote_url"
+
 	test -d .git_externals || return 1
 	module=`echo $remote_url|sed 's,\(.*\)\(/trunk\|/branch.*\|/tag.*\),\1,'`
 	branch=`echo $remote_url|sed 's,\(.*\)\(/trunk\|/branch.*\|/tag.*\),\2,'|sed 's,^/,,'`
@@ -75,7 +77,7 @@ function do_link()
 			clean_from=$(echo "${from}" | sed "s,${git_root},..,")
 			clean_to=$(echo "${to}" | sed "s,${git_root},..,")
 		fi
-		echo "Linking ${clean_from} ==> ${clean_to}"
+		echo "Linking to: ${target_link}"
 		ln -sfh "${clean_from}" "${clean_to}"
 	)
 }
@@ -108,6 +110,8 @@ do
 
 	local_clone_directory="$(echo ${words[0]}|sed 's,^/,,'|sed 's,/,...,')"
 	local_directory_symlink="$(echo ${words[0]}|sed 's,^/,,')"
+	echo "=====================" $local_directory_symlink "====================="
+
 	revision=""
 	remote_url="${words[1]}"
 
@@ -125,8 +129,6 @@ do
     [ -z "${remote_url}" ] && continue
 
 	export local_clone_directory local_directory_symlink revision remote_url
-
-	echo "Cloning $remote_url ==> .git_externals/$local_clone_directory"
 
 	dir=`dirname $local_clone_directory`
 	[ -d ".git_externals/$dir" ] || mkdir -p ".git_externals/$dir"

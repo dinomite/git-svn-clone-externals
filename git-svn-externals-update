@@ -1,11 +1,20 @@
 #!/bin/bash
 
-for dir in *; do
-    if [ -d $dir ]; then
-	cd $dir
-	echo $dir
-	git svn fetch
-	git svn rebase
-	cd ..
-    fi
+git_rev_parse=$(git rev-parse --show-cdup)
+if [ "$git_rev_parse" != "" ]; then
+	cd $git_rev_parse
+fi
+
+git_root=`pwd -P`
+
+for dir in $git_root/.git_externals/*; do
+	external_path=$(echo `basename "$dir"` | sed 's,\.\.\.,/,')
+	echo "=====================" $external_path "====================="
+	if [ -d $dir ]; then
+		cd $dir
+		git svn fetch
+		git svn rebase
+		cd ..
+	fi
+	echo ""
 done
