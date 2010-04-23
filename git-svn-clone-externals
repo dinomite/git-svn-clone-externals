@@ -17,6 +17,7 @@ function call()
 function do_clone()
 {
 	echo "Cloning from: $remote_url"
+	echo "Local clone directory: .git_externals/$local_clone_directory"
 
 	test -d .git_externals || return 1
 	module=`echo $remote_url|sed 's,\(.*\)\(/trunk\|/branch.*\|/tag.*\),\1,'`

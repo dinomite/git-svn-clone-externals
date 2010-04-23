@@ -7,6 +7,10 @@ fi
 
 git_root=`pwd -P`
 
+if [ ! -d $git_root/.git_externals ]; then
+	exit 0
+fi
+
 for dir in $git_root/.git_externals/*; do
 	external_path=$(echo `basename "$dir"` | sed 's,\.\.\.,/,')
 	echo "=====================" $external_path "====================="
