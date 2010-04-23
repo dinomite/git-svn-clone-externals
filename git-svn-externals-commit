@@ -12,16 +12,8 @@ for dir in $git_root/.git_externals/*; do
 	echo "=====================" $external_path "====================="
 	if [ -d $dir ]; then
 		cd $dir
-		STATUS=$(git status)
-		UNPUSHED=$(git-svn-check-unpushed)
-		if [ $(echo $STATUS|grep -c "clean") -lt 1 -o \
-			$(echo $UNPUSHED|grep -c "No unpushed") -lt 1 ]; then
-			git status
-			git-svn-check-unpushed
-		else
-			echo "*clean*"
-		fi
-		echo ""
+		git commit -v -a
 		cd ..
 	fi
+	echo ""
 done
