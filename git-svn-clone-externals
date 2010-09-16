@@ -81,9 +81,9 @@ function do_excludes()
 		echo "$dir" >> "$git_excludes_path"
 	fi
 }
+repository_root=`git svn info | grep -E 'Repository Root:' | sed -e 's/Repository Root: //g'`
 
-
-git svn show-externals|grep -vE '#|^$'|while read -a words
+git svn show-externals|grep -vE '#|^$'|sed -e 's/\(.*\)\^\(.*\) \(.*\)/\1\3 $repository_root\2/g'|while read -a words
 do
 	[ -z "${words[*]}" ] && continue
 
