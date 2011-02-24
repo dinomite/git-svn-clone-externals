@@ -71,7 +71,7 @@ def find_svn_branch_name():
 
 def find_uncommitted(svn_branch):
     """Given the name of the remote branch, show log of the commits."""
-    output = getoutput('git log --pretty="format:%%h %%s" %s..HEAD' %
+    output = getoutput('git log --pretty="format:%%Cred%%h%%Creset %%s" %s..HEAD' %
                        svn_branch)
     if output:
         print 'Possible unpushed commits (against %s):' % svn_branch
