@@ -16,6 +16,9 @@ function call()
 
 function do_clone()
 {
+	echo "Cloning from: $remote_url"
+	echo "Local clone directory: .git_externals/$local_clone_directory"
+
 	test -d .git_externals || return 1
 	module=`echo $remote_url|sed 's,\(.*\)\(/trunk\|/branch.*\|/tag.*\)$,\1,'`
 	branch=`echo $remote_url|sed 's,\(.*\)\(/trunk\|/branch.*\|/tag.*\)$,\2,'|sed 's,^/,,'`
@@ -24,9 +27,9 @@ function do_clone()
 	fi
  	(
 		cd .git_externals
-		if [ -d "$local_directory" ]; then
+		if [ -d "$local_clone_directory" ]; then
 			(
-				cd "$local_directory"
+				cd "$local_clone_directory"
 				call git svn fetch --all
 			)
 		else
@@ -39,16 +42,22 @@ function do_clone()
 			if [ "$module" = "$remote_url" ]; then
 				# URL does not contains any trunk, branches or tags part, so we dont need
 				# additional options for git-svn
+<<<<<<< HEAD
 				call git svn clone -r HEAD "$revision" "$module" "$local_directory"
 			else
 				call git svn clone -r HEAD "$revision" "$module" -T trunk -b $brch -t $tags "$local_directory"
+=======
+				call git svn clone "$revision" "$module" "$local_clone_directory"
+			else
+				call git svn clone "$revision" "$module" -T trunk -b $brch -t $tags "$local_clone_directory"
+>>>>>>> 2e982e478b1f037835bd58207e4cd2f7de45bae2
 			fi
 
 		fi
 		(
 			branch="$(echo ${branch}|sed 's,/$,,')"
 			if [ -n "$branch" ]; then
-				cd "$local_directory"
+				cd "$local_clone_directory"
 				call git reset --hard $branch
 			fi
 		)
@@ -57,13 +66,26 @@ function do_clone()
 
 function do_link()
 {
-	dir="$1"
-	base="$(dirname $dir)"
+	src_dir="$1"
+	target_link="$2"
+	base="$(dirname $target_link)"
 	(
-		mkdir -p "$base"
+		if [ ! -d "$base" -a ! -h "$base" ]; then
+			mkdir -p "$base"
+		fi
 		cd $base
-		rel=$(git rev-parse --show-cdup)
-		ln -sf ${rel}.git_externals/"$dir"
+		from="${git_root}/.git_externals/${src_dir}"
+		to="${git_root}/${target_link}"
+		
+		if [ "$git_root" == `pwd -P` ]; then
+			clean_from=$(echo "${from}" | sed "s,${git_root},.,")
+			clean_to=$(echo "${to}" | sed "s,${git_root},.,")
+		else
+			clean_from=$(echo "${from}" | sed "s,${git_root},..,")
+			clean_to=$(echo "${to}" | sed "s,${git_root},..,")
+		fi
+		echo "Linking to: ${target_link}"
+		ln -sfh "${clean_from}" "${clean_to}"
 	)
 }
 
@@ -83,11 +105,21 @@ function do_excludes()
 }
 repository_root=`git svn info | grep -E 'Repository Root:' | sed -e 's/Repository Root: //g'`
 
+git_rev_parse=$(git rev-parse --show-cdup)
+if [ "$git_rev_parse" != "" ]; then
+	cd $git_rev_parse
+fi
+
+git_root=`pwd -P`
+
 git svn show-externals|grep -vE '#|^$'|sed -e 's/\(.*\)\^\(.*\) \(.*\)/\1\3 $repository_root\2/g'|while read -a words
 do
 	[ -z "${words[*]}" ] && continue
 
-	local_directory="$(echo ${words[0]}|sed 's,^/,,')"
+	local_clone_directory="$(echo ${words[0]}|sed 's,^/,,'|sed 's,/,...,')"
+	local_directory_symlink="$(echo ${words[0]}|sed 's,^/,,')"
+	echo "=====================" $local_directory_symlink "====================="
+
 	revision=""
 	remote_url="${words[1]}"
 
@@ -104,16 +136,14 @@ do
 
     [ -z "${remote_url}" ] && continue
 
-	export local_directory revision remote_url
+	export local_clone_directory local_directory_symlink revision remote_url
 
-	echo "$local_directory -> $remote_url"
-
-	dir=`dirname $local_directory`
+	dir=`dirname $local_clone_directory`
 	[ -d ".git_externals/$dir" ] || mkdir -p ".git_externals/$dir"
 
-	do_clone "$revision" "$remote_url" "$local_directory" || exit
-	do_link "$local_directory"
-	do_excludes "$local_directory"
+	do_clone "$revision" "$remote_url" "$local_clone_directory" || exit
+	do_link "$local_clone_directory" "$local_directory_symlink"
+	do_excludes "$local_directory_symlink"
 
 done
 
