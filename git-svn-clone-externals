@@ -42,15 +42,9 @@ function do_clone()
 			if [ "$module" = "$remote_url" ]; then
 				# URL does not contains any trunk, branches or tags part, so we dont need
 				# additional options for git-svn
-<<<<<<< HEAD
 				call git svn clone -r HEAD "$revision" "$module" "$local_directory"
 			else
 				call git svn clone -r HEAD "$revision" "$module" -T trunk -b $brch -t $tags "$local_directory"
-=======
-				call git svn clone "$revision" "$module" "$local_clone_directory"
-			else
-				call git svn clone "$revision" "$module" -T trunk -b $brch -t $tags "$local_clone_directory"
->>>>>>> 2e982e478b1f037835bd58207e4cd2f7de45bae2
 			fi
 
 		fi
