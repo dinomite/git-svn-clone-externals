@@ -9,7 +9,8 @@ toplevel_directory="$(git rev-parse --show-cdup)"
 function call()
 {
     cmd="$@"
-    echo "$cmd"
+    pwd
+    echo "\`$cmd\`"
     eval "$cmd"
     return "$?"
 }
@@ -42,9 +43,9 @@ function do_clone()
             if [ "$module" = "$remote_url" ]; then
                 # URL does not contains any trunk, branches or tags part, so we dont need
                 # additional options for git-svn
-                call git svn clone -r HEAD "$revision" "$module" "$local_directory"
+                call git svn clone --quiet -r HEAD "$revision" "$module" "$local_clone_directory"
             else
-                call git svn clone -r HEAD "$revision" "$module" -T trunk -b $brch -t $tags "$local_directory"
+                call git svn clone --quiet -r HEAD "$revision" "$module" -T trunk -b $brch -t $tags "$local_clone_directory"
             fi
 
         fi
@@ -64,22 +65,36 @@ function do_link()
     target_link="$2"
     base="$(dirname $target_link)"
     (
+        # Make directory for external, if necessary
         if [ ! -d "$base" -a ! -h "$base" ]; then
             mkdir -p "$base"
         fi
+
+        # Link from the external's parent directory
         cd $base
         from="${git_root}/.git_externals/${src_dir}"
         to="${git_root}/${target_link}"
-        
-        if [ "$git_root" == `pwd -P` ]; then
+
+        if [ "$git_root" == `pwd -P` ]; then # External is at repo root
             clean_from=$(echo "${from}" | sed "s,${git_root},.,")
             clean_to=$(echo "${to}" | sed "s,${git_root},.,")
-        else
-            clean_from=$(echo "${from}" | sed "s,${git_root},..,")
-            clean_to=$(echo "${to}" | sed "s,${git_root},..,")
+        else # External is below repo root
+            # awk can't deal with ... as a field separator
+            depth=$(echo "${from}"|sed 's/\.\.\./<>/g'|awk 'BEGIN {FS="<>"} {print NF-1}')
+
+            # Build the necessary amount of path relativity
+            relative=""
+            while [[ $depth -gt 0 ]]; do
+                relative="../$relative"
+                depth=$((depth - 1))
+            done
+
+            # Create the relative paths
+            clean_from=$(echo "${from}" | sed "s,${git_root},${relative},")
+            clean_to=$(echo "${to}" | sed "s,${git_root},${relative},")
         fi
         echo "Linking to: ${target_link}"
-        ln -sfh "${clean_from}" "${clean_to}"
+        call ln -sfh "${clean_from}" "${clean_to}"
     )
 }
 
@@ -110,7 +125,7 @@ git svn show-externals|grep -vE '#|^$'|sed -e 's/\(.*\)\^\(.*\) \(.*\)/\1\3 $rep
 do
     [ -z "${words[*]}" ] && continue
 
-    local_clone_directory="$(echo ${words[0]}|sed 's,^/,,'|sed 's,/,...,')"
+    local_clone_directory="$(echo ${words[0]}|sed 's,^/,,'|sed 's,/,...,g')"
     local_directory_symlink="$(echo ${words[0]}|sed 's,^/,,')"
     echo "=====================" $local_directory_symlink "====================="
 
@@ -138,6 +153,4 @@ do
     do_clone "$revision" "$remote_url" "$local_clone_directory" || exit
     do_link "$local_clone_directory" "$local_directory_symlink"
     do_excludes "$local_directory_symlink"
-
 done
-
