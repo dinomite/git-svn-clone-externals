@@ -2,30 +2,30 @@
 
 git_rev_parse=$(git rev-parse --show-cdup)
 if [ "$git_rev_parse" != "" ]; then
-	cd $git_rev_parse
+  cd $git_rev_parse
 fi
 
 git_root=`pwd -P`
 
 if [ ! -d $git_root/.git_externals ]; then
-	exit 0
+  exit 0
 fi
 
 for dir in $git_root/.git_externals/*; do
-	external_path=$(echo `basename "$dir"` | sed 's,\.\.\.,/,')
-	echo "=====================" $external_path "====================="
-	if [ -d $dir ]; then
-		cd $dir
-		STATUS=$(git status)
-		UNPUSHED=$(git-svn-check-unpushed)
-		if [ $(echo $STATUS|grep -c "clean") -lt 1 -o \
-			$(echo $UNPUSHED|grep -c "No unpushed") -lt 1 ]; then
-			git status
-			git-svn-check-unpushed
-		else
-			echo "*clean*"
-		fi
-		echo ""
-		cd ..
-	fi
+  external_path=$(echo `basename "$dir"` | sed 's,\.\.\.,/,')
+  echo "=====================" $external_path "====================="
+  if [ -d $dir ]; then
+    cd $dir
+    STATUS=$(git status)
+    UNPUSHED=$(git-svn-check-unpushed)
+    if [ $(echo $STATUS|grep -c "clean") -lt 1 -o \
+      $(echo $UNPUSHED|grep -c "No unpushed") -lt 1 ]; then
+      git status
+      git-svn-check-unpushed
+    else
+      echo "*clean*"
+    fi
+    echo ""
+    cd ..
+  fi
 done
