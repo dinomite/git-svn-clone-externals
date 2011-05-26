@@ -153,4 +153,6 @@ do
     do_clone "$revision" "$remote_url" "$local_clone_directory" || exit
     do_link "$local_clone_directory" "$local_directory_symlink"
     do_excludes "$local_directory_symlink"
+
+    echo ""
 done
